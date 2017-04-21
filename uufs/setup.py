@@ -1,4 +1,4 @@
-import sys, os, bcrypt, datetime, pyotp, qrcode, hashlib, base64
+import sys, os, bcrypt, datetime, pyotp, qrcode, hashlib, base64, json, pickle
 
 class Setup:
     def __init__(self, sourceDir):
@@ -11,10 +11,13 @@ class Setup:
             self.exit("Incorrect filesystem type")
 
     def new_fs(self, sourceDir):
-        #os.mkdir(os.path.join(sourceDir, "root"))
-        self._config["password"] = bcrypt.hashpw(self.new_password().encode('utf-8'), bcrypt.gensalt())
-        self._config["creation"] = datetime.datetime.now()
+        os.mkdir(os.path.join(sourceDir, "root"))
+        self._config["password"] = bcrypt.hashpw(self.new_password().encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        self._config["creation"] = str(datetime.datetime.now())
         self.setup_2fa()
+        print(self._config)
+        with open(os.path.join(sourceDir, "config.json"), "w+") as xfile:
+            json.dump(self._config, xfile)
         self.doTestLoop()
 
     def new_password(self):
@@ -30,11 +33,8 @@ class Setup:
         return pword
 
     def setup_2fa(self):
-        otpHash = hashlib.sha256(str(self._pword + str(self._config["password"])).encode('utf-8')).digest()
-        print(otpHash)
-        otpHash = base64.b32encode(otpHash)
-        print(otpHash)
-        self.totp = pyotp.TOTP(otpHash)
+        self._config["otpKey"] = pyotp.random_base32()
+        self.totp = pyotp.TOTP(self._config["otpKey"])
         uri = self.totp.provisioning_uri(input("Enter Email: "))
         qr = qrcode.QRCode()
         qr.add_data(uri)
