@@ -1,4 +1,5 @@
-import sys, os, bcrypt, datetime, pyotp, qrcode, hashlib, base64, json, pickle
+import sys, os, datetime, base64, json # in python library
+import bcrypt, pyotp, qrcode # external
 
 class Setup:
     def __init__(self, sourceDir):
@@ -15,7 +16,6 @@ class Setup:
         self._config["password"] = bcrypt.hashpw(self.new_password().encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         self._config["creation"] = str(datetime.datetime.now())
         self.setup_2fa()
-        print(self._config)
         with open(os.path.join(sourceDir, "config.json"), "w+") as xfile:
             json.dump(self._config, xfile)
         self.doTestLoop()
