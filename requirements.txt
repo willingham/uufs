@@ -2,3 +2,5 @@ fusepy
 qrcode
 pyotp
 bcrypt
+pycrypto
+simple-crypt
