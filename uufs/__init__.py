@@ -1,6 +1,6 @@
 import sys
 from filesystem import UUFS
-from setup import Setup
+from accesscontrol import AccessControl
 from fuse import FUSE
 
 
@@ -11,7 +11,7 @@ def main():
 
     root = sys.argv[1]
     mountpoint = sys.argv[2]
-    s = Setup(root)
+    s = AccessControl(root)
     pw = s.login()
     if pw:
         print("Login Successful!")
