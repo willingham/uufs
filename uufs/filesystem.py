@@ -1,6 +1,5 @@
 import sys, os, errno
 from fuse import FUSE, FuseOSError, Operations
-from simplecrypt import encrypt, decrypt
 
 
 class UUFS(Operations):
@@ -79,12 +78,30 @@ class UUFS(Operations):
     def utimens(self, path, times=None):
         return os.utime(self._full_path(path), times)
 
-    def encryptFile(self, inFile, outFile):
-        with open(inFile, 'rb') as xfile:
-            plaintext = xfile.read()
-        ciphertext = encrypt(self._pw, plaintext)
+    def encrypt(self, plaintext):
+        lenPlain = len(plaintext)
+        plaintext = plaintext + (32 - lenPlain % 32) * chr(32 - lenPlain % 32)
+        iv = Random.new().read(AES.block_size)
+        encryptor = AES.new(self._pw, AES.MODE_CBC, iv)
+        return base64.b64encode(iv + cipher.encrypt(plaintext))
+
+    def decrypt(self, ciphertext):
+        ciphertext = base64.b64decode(ciphertext)
+        iv = ciphertext[:ARS.block_size]
+        decryptor = AES.new(self._pw, AES.MODE_CBC, iv)
+        plaintext = decryptor.decrypt(ciphertext[AES.block_size:])
+        plaintext = plaintext[:-ord(plaintext[len(plaintext)-1:])]
+        return plaintext.decode('utf-8')
+
+    def encryptFile(self, message, outFile):
+        chunkSize = 64 * 1024
+        fileSize = str(os.path.getsize(outFile)).zfill(16)
+        IV = ''
+        for i in range (16):
+            IV += chr(random.randint(0, 0xFF))
+        encryptor = AES.new(self._pw, AES.MODE_CBC, IV)
         with open(outFile, 'wb+') as yfile:
-            yfile.write(iv + cipher.encrypt(plaintext))
+
 
     def decryptFile(self, inFile, outFile):
         with open(inFile, 'rb') as xfile:
@@ -92,6 +109,7 @@ class UUFS(Operations):
         plaintext = decrypt(self._pw, ciphertext)
         with open(outFile, 'wb+') as yfile:
             yfile.write(plaintext.rstrip(b"\0"))
+
 
     def open(self, path, flags):
         print(path)
