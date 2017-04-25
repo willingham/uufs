@@ -53,7 +53,8 @@ class Setup:
 
     def login(self):
         for i in range(3):
-            p = getpass.getpass("Enter Password (attempt {} of 3): ".format(i+1))
+            #p = getpass.getpass("Enter Password (attempt {} of 3): ".format(i+1))
+            p = "asdf"
             r = bcrypt.checkpw(p.encode("utf-8"), self._config["password"].encode("utf-8"))
             if r:
                 return p
