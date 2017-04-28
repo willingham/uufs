@@ -3,31 +3,37 @@ from fuse import FUSE, FuseOSError, Operations
 from simplecrypt import encrypt, decrypt
 
 
-def decryptFile(pw, inFile, outFile):
+def decryptFile(pw, xfile):
     print("### decryptfile")
-    with open(inFile, 'rb') as xfile:
-        ciphertext = xfile.read()
+    with open(xfile, 'rb') as fil:
+        ciphertext = fil.read()
+
+    if not ciphertext.startswith(b'enc'):
+        return True
+
     print("### decryptfile - Plaintext start")
+    ciphertext = ciphertext[3:]
     plaintext = decrypt(pw, ciphertext)
     print("### decryptfile - Plaintext 1")
-    print(plaintext)
-    with open(outFile, 'wb+') as yfile:
+    with open(xfile, 'wb+') as yfile:
         yfile.write(plaintext)
 
 
-def encryptFile(pw, inFile, outFile):
-    print("### encryptFile - inFile:  " + inFile)
-    print("                - outFile: " + outFile)
-    # print("  ### encryptFile - outFile: " + outFile)
-    with open(inFile, 'rb') as xfile:
-        plaintext = xfile.read()
+def encryptFile(pw, xfile):
+    print("### encryptFile - inFile:  " + xfile)
+    with open(xfile, 'rb') as fil:
+        plaintext = fil.read()
+    
+    if plaintext.startswith(b'enc'):
+        print(plaintext)
+        return True
     print("  ###  - read plaintext")
-    # print("  ###  - Plaintext - " + str(plaintext))
     ciphertext = encrypt(pw, plaintext)
+    ciphertext = b'enc' + ciphertext
     print("  ###  - encrypted plaintext")
-    # print("  ###  - ciphertext - " + str(ciphertext))
-    with pyopen(outFile, 'wb+') as yfile:
-        yfile.write(ciphertext)
+    print(xfile)
+    with open(xfile, 'wb+') as fil:
+        fil.write(ciphertext)
     print("### encryptFile done")
 
 
@@ -43,11 +49,6 @@ class UUFS(Operations):
         path = os.path.join(self.root, partial)
         return path
 
-    def _full_shadow_path(self, partial):
-        basename = os.path.basename(partial)
-        dirname = os.path.dirname(partial)
-        shadow = os.path.join(dirname, "." + basename + ".uufs")
-        return self._full_path(shadow)
 
     def access(self, path, mode):
         fullPath = self._full_path(path)
@@ -109,8 +110,8 @@ class UUFS(Operations):
 
     def unlink(self, path):
         print("### unlink")
-        fullShadowPath = self._full_shadow_path(path)
-        return os.unlink(fullShadowPath)
+        fullPath = self._full_path(path)
+        return os.unlink(fullPath)
 
     def symlink(self, name, target):
         print("### symlink")
@@ -131,54 +132,24 @@ class UUFS(Operations):
 
     def release(self, path, fh):
         print("### release: " + path)
-        fullShadowPath = self._full_shadow_path(path)
         fullPath = self._full_path(path)
-        #encryptFile(self._pw, fullShadowPath, fullPath)
         ret = os.close(fh)
         print("### release done")
         return ret
 
     def open(self, path, flags):
         print("### open - " + path)
-        base = os.path.basename(path)
-        if base.startswith(".") and base.endswith(".uufs"):
-            print("  ### - shaddow")
-            pass
-        fullShadowPath = self._full_shadow_path(path)
         fullPath = self._full_path(path)
-        isDotFile = os.path.basename(path).startswith(".")
-        isTempFile = os.path.basename(path).endswith("~")
-        isShadowFile = base.endswith(".uufs")
-        isPassFile = isDotFile or isTempFile
-        shadowExists = os.path.isfile(fullShadowPath)
-        fileExists = os.path.isfile(fullPath)
-        if isDotFile and not isShadowFile:
-            ret = os.open(fullPath, flags)
-            print("  ### isDotFile")
-        elif (not isPassFile) and fileExists and not shadowExists:
-            decryptFile(self._pw, fullPath, fullShadowPath)
-            print("  ### file decrypted")
-        elif shadowExists:
-            ret = os.open(fullShadowPath, flags)
-            print("  ### shadow opened")
-            print("  ### fullShadowPath - " + fullShadowPath)
-        else:
-            ret = os.open(fullPath, flags)
-            print("  ### - passfile")
+        decryptFile(self._pw, fullPath)
+        ret = os.open(fullPath, flags)
         print("### open done")
         return ret
 
     def create(self, path, mode, fi=None):
         print("### Create - " + path)
         fullPath = self._full_path(path)
-        fullShadowPath = self._full_shadow_path(path)
-        print("  ###  - opening")
-        fd = os.open(fullPath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
-        print("  ###  - opened, closing")
-        os.close(fd)
-        print("  ###  - closed")
-        ret = os.open(fullShadowPath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
-        print("### - create done")
+        ret = os.open(fullPath, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+        print("### create done")
         return ret
 
     def read(self, path, length, offset, fh):
@@ -198,8 +169,7 @@ class UUFS(Operations):
     def truncate(self, path, length, fh=None):
         print("### Truncate - " + path)
         fullPath = self._full_path(path)
-        fullShadowPath = self._full_shadow_path(path)
-        with open(fullShadowPath, 'r+') as xfile:
+        with open(fullPath, 'r+') as xfile:
             xfile.truncate(length)
 
     def flush(self, path, fh):
@@ -212,7 +182,6 @@ class UUFS(Operations):
 
     def fsync(self, path, fdatasync, fh):
         print("### fsync")
-        fullShadowPath = self._full_shadow_path(path)
         if fdatasync != 0:
             return os.fsync(fh)
             return os.fdatasync(fh)

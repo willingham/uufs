@@ -14,6 +14,7 @@ class Setup:
         else:
             with open(os.path.join(sourceDir, "config.json"), "r") as xfile:
                 self._config = json.load(xfile)
+            self.totp = pyotp.TOTP(self._config["otpKey"])
 
     def new_fs(self, sourceDir):
         os.mkdir(os.path.join(sourceDir, "root"))
@@ -46,18 +47,24 @@ class Setup:
         qr.print_tty()
         # print("Your secret 2FA key: {}".format(otpHash))
 
-    def doTestLoop(self):
-        while (True):
+    def loginLoop(self):
+        for i in range(3):
             x = input("Enter a key: ")
-            print(self.totp.verify(x))
+            if self.totp.verify(x):
+                return True
+        print("Too many wrong attempts.")
+        return False
 
     def login(self):
         for i in range(3):
-            #p = getpass.getpass("Enter Password (attempt {} of 3): ".format(i+1))
-            p = "asdf"
+            p = getpass.getpass("Enter Password (attempt {} of 3): ".format(i+1))
             r = bcrypt.checkpw(p.encode("utf-8"), self._config["password"].encode("utf-8"))
             if r:
-                return p
+                if self.loginLoop():
+                    print("Login Success!")
+                    return p
+                else:
+                   return False 
         return False
 
     def error(self, message):
