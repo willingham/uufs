@@ -1,5 +1,6 @@
 import sys, os, errno
 from fuse import FUSE, FuseOSError, Operations
+from simplecrypt import encrypt, decrypt
 
 
 def decryptFile(pw, xfile):

@@ -1,9 +1,12 @@
-import sys, os, datetime, json, getpass # in python library
+import sys, os, random, datetime, json, getpass # in python library
 import bcrypt, pyotp, qrcode # external
 
 
 class Setup:
     def __init__(self, sourceDir):
+        print("####################################################")
+        print("#########         Welcome to uufs          #########")
+        print("####################################################")
         self._config = {}
         if not os.path.isdir(sourceDir):
             self.error("Directory doesn't exist")
@@ -20,6 +23,7 @@ class Setup:
         os.mkdir(os.path.join(sourceDir, "root"))
         self._config["password"] = bcrypt.hashpw(self.new_password().encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         self._config["creation"] = str(datetime.datetime.now())
+        self._config["status"] = "decrypted"
         self.setup_2fa()
         with open(os.path.join(sourceDir, "config.json"), "w+") as xfile:
             json.dump(self._config, xfile)
@@ -49,24 +53,29 @@ class Setup:
 
     def loginLoop(self):
         for i in range(3):
-            x = input("Enter a key: ")
+            x = input("Enter key: ")
             if self.totp.verify(x):
                 return True
-        print("Too many wrong attempts.")
+        print("Too many incorrect attempts.")
         return False
 
     def login(self):
+        print("#                      Login                       #")
+        print("####################################################")
+        prompt = "Enter Password (attempt {} of 3): "
         for i in range(3):
-            p = getpass.getpass("Enter Password (attempt {} of 3): ".format(i+1))
-            r = bcrypt.checkpw(p.encode("utf-8"), self._config["password"].encode("utf-8"))
+            p = getpass.getpass(prompt.format(i+1))
+            p = p.encode("utf-8")
+            r = bcrypt.checkpw(p, self._config["password"].encode("utf-8"))
             if r:
                 if self.loginLoop():
-                    print("Login Success!")
+                    print("Login Successfull!")
                     return p
                 else:
-                   return False 
+                    return False
         return False
 
     def error(self, message):
         print("Error: {}".format(message))
         sys.exit()
+
