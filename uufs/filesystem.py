@@ -1,6 +1,5 @@
 import sys, os, errno
 from fuse import FUSE, FuseOSError, Operations
-from simplecrypt import encrypt, decrypt
 
 
 def decryptFile(pw, xfile):
@@ -129,13 +128,13 @@ class UUFS(Operations):
         print("### utimens")
         return os.utime(self._full_path(path), times)
 
-
     def release(self, path, fh):
         print("### release: " + path)
         fullPath = self._full_path(path)
         ret = os.close(fh)
         print("### release done")
         return ret
+
 
     def open(self, path, flags):
         print("### open - " + path)
