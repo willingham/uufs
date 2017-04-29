@@ -5,6 +5,49 @@ UUFS is an encrypted FUSE filesystem with 2fa.
 There are many encrypted filesystems that currently exist, but none of them support two-factor authentication to my knowledge.  UUFS implements a unique encryption strategy along with 2fa, making it the only FUSE filesystem of its kind.
 
 ## Implementation
+UUFS is implemented using [Filesystem in Userspace (FUSE)](https://github.com/libfuse/libfuse).  This allowed access to system apis, and through the use of [fusepy](https://github.com/terencehonles/fusepy), it allowed access to python cryptographic libraries.
+
+### External Python Modules Used
+* [fusepy](https://github.com/terencehonles/fusepy) - Interface to FUSE
+* [simple-crypt](https://github.com/andrewcooke/simple-crypt) - Encryption library that uses [pycrypto](https://www.dlitz.net/software/pycrypto/) underneath.
+* [pyotp](https://github.com/pyotp/pyotp) - Implements the RFC 6238 TOTP algorithm in python.
+* [qrcode](https://pypi.python.org/pypi/qrcode) - Used for generation of qrcodes for TOTP apps.
+* [bcrypt](https://pypi.python.org/pypi/bcrypt/3.1.0) - Used for hashing and authenticating passwords.
+
+### Supported Filesystem Operations
+The following operations are supported.
+* access
+* chmod
+* chown
+* getattr
+* readdir
+* readlink
+* mknod
+* rmdir
+* mkdir
+* statfs
+* unlink
+* symlink
+* rename
+* link
+* utimens
+* release
+* open
+* create
+* read
+* write
+* truncate
+* flush
+* fsync
+
+### Unique Encryption Scheme
+In today's society there is evermore the need for encryption.  It is not uncommon for the border security of different countries so search the electronic devices of those crossing the border.  In oppressive societies, or those that want to control what the rest of the world sees about them, this can pose an issue for photographers and other media professionals.  This filesystem aims to help with this problem by encrypting one's files.
+
+Many filesystems encrypt and decrypt files blocks at a time while they are being used.  While this strategy works well for many instances, it may drastically hinder performance when working with digital media.  Many media management and editing programs such as Adobe Lightroom and Adobe Photoshop will perform many reads and writes to the system while they are working with files.  Since these files can be extremely large, this can be very costly and time-consuming while one is editing or working with media.
+
+UUFS implements a new strategy such that a file is decrypted in its entirety the first time that is needed.  On each subsequent usage of the file, it can be accessed with no delay from the encryption.  Then, once the filesystem is being unmounted, all of the files that have been unencrypted will be encrypted.  
+
+While this strategy is not perfect for every scenario, it will greatly help those who use software that reads and writes large amounts of data to the disk often.
 
 ## Installation
 ### High level
