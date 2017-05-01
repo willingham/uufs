@@ -7,6 +7,9 @@ There are many encrypted filesystems that currently exist, but none of them supp
 ## Implementation
 UUFS is implemented using [Filesystem in Userspace (FUSE)](https://github.com/libfuse/libfuse).  This allowed access to system apis, and through the use of [fusepy](https://github.com/terencehonles/fusepy), it allowed access to python cryptographic libraries.
 
+### FUSE Overview
+FUSE allows the extension of native file handling on an operating system.  Through the use of FUSE, new filesystems can be written more easily than traditional ones.  FUSE takes in the traditional, or native, filesystem commands and allows the filesystem developer to process those commands however they see fit.  For example, you could make a simple FUSE filesystem that does the same thing as a normal filesystem with no extra features by passing each system command (open, access, fsync, etc) off to the equivalent system command for the language that the filesystem is being written in. These filesystems can pull data from other filesystems, over the network, memory, and almost any other source for data.  FUSE allows you to determine how traditional, or native, file commands will behave in the custom filesystem.  This provides endless opportunities for the development of new filesystems with new and innovative functionality.
+
 ### External Python Modules Used
 * [fusepy](https://github.com/terencehonles/fusepy) - Interface to FUSE
 * [simple-crypt](https://github.com/andrewcooke/simple-crypt) - Encryption library that uses [pycrypto](https://www.dlitz.net/software/pycrypto/) underneath.
@@ -72,6 +75,6 @@ Then, UUFS will generate a qrcode for the two-factor authentication.  You can us
 
 When you wish to unmount the filesystem, run `umount <mountpoint>`.  This will encrypt all your data stored in the filesystem.
 
-When you wish to use the filesystem in the future, you can run the same run.sh command.  You will be prompted for your password, and then for a totp key.
+When you wish to use the filesystem in the future, you can run the same run.sh command.  You will be prompted for your password, and then for a TOTP key.
 
 
